@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self';">
-  <title>One-Time TicketPay | Reset Used Codes & Scan Again</title>
+  <title>One-Time TicketPay | Reset & Regenerate Receipts</title>
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <style>
@@ -57,7 +57,7 @@
 <body>
 <div class="container">
   <div class="flex-between">
-    <div><h1>🔄 One-Time TicketPay + Reset</h1><div class="sub">Single‑use QR codes | Reset any code to scan again</div></div>
+    <div><h1>🔄 One-Time TicketPay + Reset</h1><div class="sub">Single‑use QR codes | Reset any code to scan again & get a new receipt</div></div>
     <div style="display: flex; gap: 10px;">
       <button id="reportTakingsBtn" class="report-btn">📊 Takings Report</button>
       <button id="clearAllDataBtn" class="warning" style="background:#991b1b;">🗑️ Reset ALL Data</button>
@@ -85,7 +85,7 @@
       <div id="detailedReceiptView" class="detail-receipt"><div style="text-align:center;">🔍 Click any receipt to see details & shareable link</div></div>
     </div>
   </div>
-  <footer>🔁 Each ticket code can be reset individually: removes its receipt(s) and makes it scannable again.</footer>
+  <footer>🔁 Each ticket code can be reset individually: removes its receipt(s) and makes it scannable again. After reset, a fresh receipt is generated on next scan.</footer>
 </div>
 
 <!-- Takings Report Modal -->
@@ -119,7 +119,7 @@
   }
   
   // ---------- Persistence (receipts + usedCodesSet) ----------
-  const STORAGE_RECEIPTS = "ticketpay_receipts_v4";
+  const STORAGE_RECEIPTS = "ticketpay_receipts_v5";
   const STORAGE_USED_CODES = "ticketpay_used_codes";
   let receiptsStore = [];
   let usedCodesSet = new Set();  // stores normalized rawCode strings
@@ -155,7 +155,6 @@
     const detailDiv = document.getElementById('detailedReceiptView');
     if (detailDiv.innerText.includes(norm)) detailDiv.innerHTML = `<div style="text-align:center;">🔄 Code reset. Scan again to generate new receipt.</div>`;
     showToast(`✅ Code "${norm}" is now reusable. Old receipt(s) removed.`, false);
-    // Also re-render demo QR status
   }
   
   // Create new receipt (used after validating one-time)
@@ -164,12 +163,12 @@
     return {
       id: generateSecureReceiptId(), ticketType: ticketInfo.type, amountFormatted: ticketInfo.amountFormatted, amountNumeric: ticketInfo.amount,
       rawCode: rawCode.trim(), timestamp: Date.now(), dateHuman: new Date().toLocaleString('en-PG', {hour12:false}),
-      uniqueReceiptLink: `#/receipt/${generateSecureReceiptId().slice(0,20)}${Math.floor(Math.random()*1000)}`, // unique per receipt
+      uniqueReceiptLink: `#/receipt/${generateSecureReceiptId().slice(0,20)}${Math.floor(Math.random()*1000)}`,
       colorClass: ticketInfo.colorClass, transactionId: `TXN-${Math.floor(Math.random()*10000000)}`, status: "PAID"
     };
   }
   
-  // Main payment + one-time enforcement
+  // Main payment + one-time enforcement (after reset, this will work again)
   function generateReceiptFromCode(rawCode, source = "scan") {
     if (!rawCode || rawCode.trim() === "") { showToast("Empty ticket code", true); return false; }
     const norm = rawCode.trim();
@@ -252,13 +251,13 @@
   }
   
   // Demo QR UI & reset buttons on demo cards
+  function updateDemoQrStatus() { refreshAllDemoQrStatus(); }
   function refreshAllDemoQrStatus() {
     const cards = document.querySelectorAll('.qr-card');
     cards.forEach(card => {
       const p = card.querySelector('p');
       if (p && usedCodesSet.has(p.innerText.trim())) card.classList.add('invalid-card');
       else card.classList.remove('invalid-card');
-      // also ensure reset button inside demo card works (they have reset buttons already)
     });
   }
   
