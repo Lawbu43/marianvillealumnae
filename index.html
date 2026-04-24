@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MAG Association - Secure Receipt</title>
+    <style>
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        /* Error message if no code is scanned */
+        #error-screen {
+            text-align: center;
+            display: none;
+            color: #666;
+        }
+
+        /* Standard Receipt Styling */
+        .receipt-card {
+            width: 350px;
+            background: #fff;
+            padding: 25px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+            border-top: 8px solid transparent; /* Changed dynamically */
+            display: none; 
+        }
+
+        .header {
+            text-align: center;
+            border-bottom: 1px dashed #ccc;
+            padding-bottom: 15px;
+            margin-bottom: 15px;
+        }
+
+        .association-name {
+            font-weight: bold;
+            font-size: 1.1rem;
+            text-transform: uppercase;
+            margin: 5px 0;
+        }
+
+        .motto {
+            font-style: italic;
+            font-size: 0.8rem;
+            color: #555;
+        }
+
+        .row {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
+            font-size: 0.9rem;
+        }
+
+        .total {
+            margin-top: 15px;
+            padding-top: 10px;
+            border-top: 2px solid #333;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        .badge {
+            text-align: center;
+            padding: 5px;
+            margin-top: 10px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            color: white;
+            text-transform: uppercase;
+        }
+
+        .footer {
+            margin-top: 25px;
+            text-align: center;
+            font-size: 0.7rem;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="error-screen">
+        <h2>Invalid QR Code</h2>
+        <p>Please scan an official MAG Association QR code.</p>
+    </div>
+
+    <div id="receipt" class="receipt-card">
+        <div class="header">
+            <div id="live-indicator" style="color: red; font-size: 0.6rem;">● LIVE TRANSACTION</div>
+            <div class="association-name">Marianville Alumnae Group Association</div>
+            <div class="motto">To Show God's Love</div>
+        </div>
+
+        <div class="body">
+            <div class="row">
+                <span>Date:</span>
+                <span id="date"></span>
+            </div>
+            <div class="row">
+                <span>Reference:</span>
+                <span id="ref-no"></span>
+            </div>
+            <div class="row">
+                <span>Category:</span>
+                <span id="category" style="font-weight: bold;"></span>
+            </div>
+            
+            <div id="color-badge" class="badge"></div>
+
+            <div class="row total">
+                <span>TOTAL PAID</span>
+                <span id="amount"></span>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Marianville Alumnae Group Inc.</p>
+            <p>Thank you for your payment.</p>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * How to use:
+         * Add ?type=orange to the URL for Alumnae
+         * Add ?type=blue to the URL for Family & Friends
+         * Add ?type=yellow to the URL for Children
+         */
+
+        const params = new URLSearchParams(window.location.search);
+        const type = params.get('type');
+        
+        const receipt = document.getElementById('receipt');
+        const errorScreen = document.getElementById('error-screen');
+
+        // Payment Configuration
+        const config = {
+            'orange': {
+                name: 'Alumnae Payment',
+                price: 'K6.00',
+                color: '#FF8C00',
+                textColor: 'white'
+            },
+            'blue': {
+                name: 'Family & Friends Payment',
+                price: 'K6.00',
+                color: '#0047AB',
+                textColor: 'white'
+            },
+            'yellow': {
+                name: 'Children (6-17 Years)',
+                price: 'K3.00',
+                color: '#FFD700',
+                textColor: 'black'
+            }
+        };
+
+        if (type && config[type]) {
+            const data = config[type];
+            
+            // Show receipt, Hide error
+            receipt.style.display = 'block';
+            receipt.style.borderTopColor = data.color;
+
+            // Fill Data
+            document.getElementById('date').innerText = new Date().toLocaleString();
+            document.getElementById('ref-no').innerText = "MAG-" + Math.random().toString(36).substr(2, 6).toUpperCase();
+            document.getElementById('category').innerText = data.name;
+            document.getElementById('amount').innerText = data.price;
+
+            // Update Badge
+            const badge = document.getElementById('color-badge');
+            badge.innerText = type + " tier verified";
+            badge.style.backgroundColor = data.color;
+            badge.style.color = data.textColor;
+
+        } else {
+            errorScreen.style.display = 'block';
+        }
+    </script>
+</body>
+</html>
