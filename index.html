@@ -4,659 +4,264 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self';">
-  <title>One-Time TicketPay | Secure Single-Use QR Receipts</title>
-  <!-- html5-qrcode scanner & QRCode generator -->
+  <title>One-Time TicketPay | Reset Used Codes & Scan Again</title>
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      font-family: system-ui, 'Segoe UI', 'Inter', 'Poppins', sans-serif;
-    }
-    body {
-      background: linear-gradient(145deg, #f8f9fc 0%, #eef2f7 100%);
-      padding: 1.5rem;
-      min-height: 100vh;
-    }
-    .container {
-      max-width: 1400px;
-      margin: 0 auto;
-    }
-    h1 {
-      font-size: 1.8rem;
-      font-weight: 700;
-      background: linear-gradient(135deg, #1E2A3E, #0f172a);
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
-      display: inline-block;
-      margin-bottom: 0.5rem;
-    }
-    .sub {
-      color: #334155;
-      margin-bottom: 2rem;
-      border-left: 4px solid #f59e0b;
-      padding-left: 1rem;
-      font-weight: 500;
-    }
-    .dashboard {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 2rem;
-    }
-    .scan-panel {
-      flex: 1.2;
-      min-width: 280px;
-      background: white;
-      border-radius: 2rem;
-      padding: 1.5rem;
-      box-shadow: 0 20px 35px -12px rgba(0,0,0,0.1);
-    }
-    .receipt-panel {
-      flex: 2;
-      min-width: 340px;
-      background: white;
-      border-radius: 2rem;
-      padding: 1.5rem;
-      box-shadow: 0 20px 35px -12px rgba(0,0,0,0.1);
-    }
-    .qr-demo-section {
-      margin-top: 2rem;
-      background: #f1f5f9;
-      border-radius: 1.5rem;
-      padding: 1.2rem;
-    }
-    .demo-cards {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 1rem;
-      margin-top: 1rem;
-      justify-content: space-around;
-    }
-    .qr-card {
-      background: white;
-      border-radius: 1.5rem;
-      padding: 0.8rem;
-      text-align: center;
-      width: 140px;
-      box-shadow: 0 6px 12px -6px rgba(0,0,0,0.1);
-      transition: opacity 0.2s;
-    }
-    .qr-card.invalid-card {
-      opacity: 0.5;
-      filter: grayscale(0.2);
-      position: relative;
-    }
-    .qr-card.invalid-card::after {
-      content: "❌ USED";
-      position: absolute;
-      top: 40%;
-      left: 0;
-      right: 0;
-      background: rgba(0,0,0,0.7);
-      color: white;
-      font-size: 0.7rem;
-      font-weight: bold;
-      text-align: center;
-      padding: 2px;
-      border-radius: 20px;
-      width: 80%;
-      margin: 0 auto;
-    }
-    .badge-price {
-      font-size: 0.7rem;
-      font-weight: bold;
-      color: #0f3b2c;
-      background: #dcfce7;
-      display: inline-block;
-      padding: 0.2rem 0.5rem;
-      border-radius: 30px;
-      margin-top: 6px;
-    }
-    button {
-      background: #1e293b;
-      border: none;
-      padding: 0.6rem 1.2rem;
-      border-radius: 40px;
-      color: white;
-      font-weight: 600;
-      cursor: pointer;
-      transition: 0.2s;
-    }
-    button.secondary {
-      background: #475569;
-    }
-    button.warning {
-      background: #b91c1c;
-    }
-    button.report-btn {
-      background: #2c5f2d;
-    }
-    button:active {
-      transform: scale(0.97);
-    }
-    .scanner-box {
-      background: #0f172a0c;
-      border-radius: 24px;
-      padding: 1rem;
-      margin: 1rem 0;
-      border: 1px solid #e2e8f0;
-    }
-    #reader {
-      width: 100%;
-      border-radius: 20px;
-      overflow: hidden;
-    }
-    .manual-input {
-      display: flex;
-      gap: 0.6rem;
-      margin: 1rem 0;
-    }
-    .manual-input input {
-      flex: 1;
-      padding: 0.75rem;
-      border-radius: 60px;
-      border: 1px solid #cbd5e1;
-      font-size: 0.9rem;
-    }
-    .receipt-list {
-      max-height: 320px;
-      overflow-y: auto;
-      border-top: 1px solid #e2e8f0;
-      margin-top: 1rem;
-      padding-top: 0.8rem;
-    }
-    .receipt-item {
-      background: #f8fafc;
-      border-radius: 1rem;
-      padding: 0.8rem;
-      margin-bottom: 0.7rem;
-      border-left: 5px solid;
-      cursor: pointer;
-    }
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: system-ui, 'Segoe UI', 'Inter', sans-serif; }
+    body { background: linear-gradient(145deg, #f8f9fc 0%, #eef2f7 100%); padding: 1.5rem; min-height: 100vh; }
+    .container { max-width: 1400px; margin: 0 auto; }
+    h1 { font-size: 1.8rem; font-weight: 700; background: linear-gradient(135deg, #1E2A3E, #0f172a); -webkit-background-clip: text; background-clip: text; color: transparent; display: inline-block; margin-bottom: 0.5rem; }
+    .sub { color: #334155; margin-bottom: 2rem; border-left: 4px solid #f59e0b; padding-left: 1rem; font-weight: 500; }
+    .dashboard { display: flex; flex-wrap: wrap; gap: 2rem; }
+    .scan-panel { flex: 1.2; min-width: 280px; background: white; border-radius: 2rem; padding: 1.5rem; box-shadow: 0 20px 35px -12px rgba(0,0,0,0.1); }
+    .receipt-panel { flex: 2; min-width: 340px; background: white; border-radius: 2rem; padding: 1.5rem; box-shadow: 0 20px 35px -12px rgba(0,0,0,0.1); }
+    .qr-demo-section { margin-top: 2rem; background: #f1f5f9; border-radius: 1.5rem; padding: 1.2rem; }
+    .demo-cards { display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 1rem; justify-content: space-around; }
+    .qr-card { background: white; border-radius: 1.5rem; padding: 0.8rem; text-align: center; width: 150px; box-shadow: 0 6px 12px -6px rgba(0,0,0,0.1); transition: 0.1s; position: relative; }
+    .qr-card.invalid-card { opacity: 0.6; filter: grayscale(0.2); }
+    .qr-card.invalid-card::after { content: "❌ USED"; position: absolute; top: 35%; left: 0; right: 0; background: rgba(0,0,0,0.7); color: white; font-size: 0.7rem; font-weight: bold; text-align: center; padding: 2px; width: 80%; margin: 0 auto; border-radius: 20px; }
+    .badge-price { font-size: 0.7rem; font-weight: bold; color: #0f3b2c; background: #dcfce7; display: inline-block; padding: 0.2rem 0.5rem; border-radius: 30px; margin-top: 6px; }
+    button { background: #1e293b; border: none; padding: 0.5rem 1rem; border-radius: 40px; color: white; font-weight: 600; cursor: pointer; transition: 0.2s; }
+    button.secondary { background: #475569; }
+    button.warning { background: #b91c1c; }
+    button.report-btn { background: #2c5f2d; }
+    button.small-reset { background: #92400e; padding: 0.2rem 0.6rem; font-size: 0.7rem; margin-left: 0.5rem; }
+    button:active { transform: scale(0.97); }
+    .scanner-box { background: #0f172a0c; border-radius: 24px; padding: 1rem; margin: 1rem 0; border: 1px solid #e2e8f0; }
+    #reader { width: 100%; border-radius: 20px; overflow: hidden; }
+    .manual-input { display: flex; gap: 0.6rem; margin: 1rem 0; }
+    .manual-input input { flex: 1; padding: 0.75rem; border-radius: 60px; border: 1px solid #cbd5e1; font-size: 0.9rem; }
+    .receipt-list { max-height: 360px; overflow-y: auto; border-top: 1px solid #e2e8f0; margin-top: 1rem; padding-top: 0.8rem; }
+    .receipt-item { background: #f8fafc; border-radius: 1rem; padding: 0.8rem; margin-bottom: 0.7rem; border-left: 5px solid; cursor: pointer; transition: 0.1s; }
     .receipt-item.orange { border-left-color: #f97316; }
     .receipt-item.blue { border-left-color: #3b82f6; }
     .receipt-item.yellow { border-left-color: #eab308; }
-    .receipt-link {
-      font-family: monospace;
-      font-size: 0.7rem;
-      background: #eef2ff;
-      padding: 0.2rem 0.5rem;
-      border-radius: 40px;
-      word-break: break-all;
-      margin-top: 6px;
-      display: inline-block;
-    }
-    .detail-receipt {
-      background: #fef9e3;
-      border-radius: 1.5rem;
-      padding: 1.2rem;
-      margin-top: 1.2rem;
-      border: 1px solid #ffedd5;
-    }
-    .flex-between {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .paid-badge {
-      background: #22c55e;
-      color: white;
-      padding: 0.2rem 0.8rem;
-      border-radius: 50px;
-      font-size: 0.7rem;
-      font-weight: bold;
-    }
-    hr {
-      margin: 0.8rem 0;
-      border-color: #e9ecef;
-    }
-    .copy-btn {
-      background: #334155;
-      padding: 0.2rem 0.8rem;
-      font-size: 0.7rem;
-      border-radius: 30px;
-    }
-    .empty-text {
-      color: #64748b;
-      text-align: center;
-      padding: 1rem;
-    }
-    .modal {
-      display: none;
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: rgba(0,0,0,0.6);
-      justify-content: center;
-      align-items: center;
-      z-index: 1000;
-    }
-    .modal-content {
-      background: white;
-      max-width: 500px;
-      width: 90%;
-      border-radius: 2rem;
-      padding: 1.8rem;
-      box-shadow: 0 25px 40px rgba(0,0,0,0.3);
-    }
-    .report-stats {
-      background: #f1f5f9;
-      border-radius: 1.5rem;
-      padding: 1rem;
-      margin: 1rem 0;
-    }
-    footer {
-      text-align: center;
-      margin-top: 2rem;
-      font-size: 0.75rem;
-      color: #5b6e8c;
-    }
-    .toast-alert {
-      position: fixed;
-      bottom: 20px;
-      left: 20px;
-      background: #991b1b;
-      color: white;
-      padding: 12px 20px;
-      border-radius: 40px;
-      z-index: 1100;
-      font-weight: bold;
-      animation: fadeOut 3s forwards;
-    }
-    @keyframes fadeOut {
-      0% { opacity: 1; }
-      70% { opacity: 1; }
-      100% { opacity: 0; visibility: hidden; }
-    }
-    @media (max-width: 780px) {
-      body { padding: 1rem; }
-      .dashboard { gap: 1rem; }
-    }
+    .receipt-link { font-family: monospace; font-size: 0.7rem; background: #eef2ff; padding: 0.2rem 0.5rem; border-radius: 40px; word-break: break-all; margin-top: 6px; display: inline-block; }
+    .detail-receipt { background: #fef9e3; border-radius: 1.5rem; padding: 1.2rem; margin-top: 1.2rem; border: 1px solid #ffedd5; }
+    .flex-between { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; }
+    .paid-badge { background: #22c55e; color: white; padding: 0.2rem 0.8rem; border-radius: 50px; font-size: 0.7rem; font-weight: bold; }
+    hr { margin: 0.8rem 0; border-color: #e9ecef; }
+    .copy-btn { background: #334155; padding: 0.2rem 0.8rem; font-size: 0.7rem; border-radius: 30px; }
+    .empty-text { color: #64748b; text-align: center; padding: 1rem; }
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 1000; }
+    .modal-content { background: white; max-width: 500px; width: 90%; border-radius: 2rem; padding: 1.8rem; }
+    .report-stats { background: #f1f5f9; border-radius: 1.5rem; padding: 1rem; margin: 1rem 0; }
+    footer { text-align: center; margin-top: 2rem; font-size: 0.75rem; color: #5b6e8c; }
+    .toast { position: fixed; bottom: 20px; left: 20px; background: #14532d; color: white; padding: 12px 20px; border-radius: 40px; z-index: 1100; font-weight: bold; animation: fadeOut 3s forwards; }
+    .toast.error { background: #991b1b; }
+    @keyframes fadeOut { 0% { opacity: 1; } 70% { opacity: 1; } 100% { opacity: 0; visibility: hidden; } }
+    @media (max-width: 780px) { body { padding: 1rem; } .dashboard { gap: 1rem; } }
   </style>
 </head>
 <body>
 <div class="container">
   <div class="flex-between">
-    <div>
-      <h1>🔐 One-Time TicketPay</h1>
-      <div class="sub">Strict single-use QR codes | Persistent receipts & takings report</div>
-    </div>
+    <div><h1>🔄 One-Time TicketPay + Reset</h1><div class="sub">Single‑use QR codes | Reset any code to scan again</div></div>
     <div style="display: flex; gap: 10px;">
       <button id="reportTakingsBtn" class="report-btn">📊 Takings Report</button>
       <button id="clearAllDataBtn" class="warning" style="background:#991b1b;">🗑️ Reset ALL Data</button>
     </div>
   </div>
-
   <div class="dashboard">
-    <!-- SCANNER PANEL -->
     <div class="scan-panel">
-      <h3>📷 QR Scanner (one‑time use)</h3>
-      <p style="font-size: 0.85rem; color:#334155;">Each QR code can be scanned <strong>only once</strong>. After payment, it becomes invalid.</p>
-      <div class="scanner-box">
-        <div id="reader" style="width:100%"></div>
-      </div>
+      <h3>📷 Scanner (one‑time use)</h3>
+      <p style="font-size: 0.85rem;">Each QR code works <strong>only once</strong>. Use “Reset” below to reactivate.</p>
+      <div class="scanner-box"><div id="reader"></div></div>
       <div class="manual-input">
-        <input type="text" id="manualCodeInput" placeholder="Manual ticket code (exact match)" autocomplete="off">
-        <button id="manualGenBtn">📄 Pay & Generate Receipt</button>
+        <input type="text" id="manualCodeInput" placeholder="Ticket code (Orange Alumnae / etc)">
+        <button id="manualGenBtn">💳 Pay & Receipt</button>
       </div>
-      <button id="stopScannerBtn" class="secondary" style="background:#4b5563;">⏹️ Stop Camera</button>
+      <button id="stopScannerBtn" class="secondary">⏹️ Stop Camera</button>
       <div class="qr-demo-section">
-        <strong>🔽 Demo QR codes (each valid for ONE scan only)</strong>
+        <strong>🔽 Demo QR codes (each valid once, can be reset)</strong>
         <div class="demo-cards" id="demoQrContainer"></div>
-        <p style="font-size:12px; margin-top:8px;">⬆️ After scanning, the QR becomes invalid & visually marked.</p>
+        <p style="font-size:12px; margin-top:8px;">⬆️ Scan → payment receipt → code becomes invalid. Press "⟳ Reset" to reuse.</p>
       </div>
     </div>
-
-    <!-- RECEIPTS PANEL -->
     <div class="receipt-panel">
-      <div class="flex-between">
-        <h3>🧾 Receipts & Unique Links</h3>
-        <span style="font-size: 0.7rem;">⚡ one‑time use enforced</span>
-      </div>
-      <div id="receiptsHistory" class="receipt-list">
-        <div class="empty-text">💸 No payments yet. Scan a valid QR code.</div>
-      </div>
-      <div id="detailedReceiptView" class="detail-receipt">
-        <div style="text-align:center; color:#6c757d;">🔍 Click any receipt to view secure details & shareable link</div>
-      </div>
+      <div class="flex-between"><h3>🧾 Receipts & Unique Links</h3><span style="font-size:0.7rem;">⚡ click receipt to view</span></div>
+      <div id="receiptsHistory" class="receipt-list"><div class="empty-text">💸 No payments yet.</div></div>
+      <div id="detailedReceiptView" class="detail-receipt"><div style="text-align:center;">🔍 Click any receipt to see details & shareable link</div></div>
     </div>
   </div>
-  <footer>🔒 Strict one‑scan policy: each unique ticket code can be used exactly once. All used codes are permanently recorded. Reset only via "Reset ALL Data".</footer>
+  <footer>🔁 Each ticket code can be reset individually: removes its receipt(s) and makes it scannable again.</footer>
 </div>
 
 <!-- Takings Report Modal -->
 <div id="reportModal" class="modal">
   <div class="modal-content">
-    <div class="flex-between">
-      <h3>📈 Financial Takings Report</h3>
-      <button id="closeModalBtn" style="background:#6c757d; padding: 0.3rem 0.8rem;">✖️ Close</button>
-    </div>
+    <div class="flex-between"><h3>📈 Takings Report</h3><button id="closeModalBtn" style="background:#6c757d;">✖️ Close</button></div>
     <div id="reportStatsContainer" class="report-stats"></div>
-    <button id="exportReportBtn" style="background:#1e4620; width:100%; margin-top: 0.8rem;">📎 Export CSV Report</button>
+    <button id="exportReportBtn" style="background:#1e4620; width:100%;">📎 Export CSV</button>
   </div>
 </div>
 
 <script>
-  // ---------- SECURITY + ESCAPE ----------
-  function escapeHtml(str) {
-    if (!str) return '';
-    return str.replace(/[&<>]/g, function(m) {
-      if (m === '&') return '&amp;';
-      if (m === '<') return '&lt;';
-      if (m === '>') return '&gt;';
-      return m;
-    });
+  // ---------- Helpers ----------
+  function escapeHtml(str) { if (!str) return ''; return str.replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])); }
+  function showToast(msg, isError = false) {
+    const toast = document.createElement('div'); toast.className = `toast ${isError ? 'error' : ''}`; toast.innerText = msg;
+    document.body.appendChild(toast); setTimeout(() => toast.remove(), 3000);
   }
   
-  // ---------- TICKET VALIDATION ----------
+  // ---------- Ticket detection ----------
   function detectTicketTypeAndPrice(rawCode) {
     if (!rawCode || typeof rawCode !== 'string') return null;
     const code = rawCode.trim().toLowerCase();
-    if (code === "orange alumnae" || code.includes("orange alumnae")) {
-      return { type: "🍊 Orange Alumnae", amount: 6.00, amountFormatted: "K6.00", colorClass: "orange", key: "ORANGE" };
-    }
-    if (code === "blue friends & family" || (code.includes("blue friends") && code.includes("family")) || code.includes("friends & family")) {
-      return { type: "💙 Blue Friends & Family", amount: 6.00, amountFormatted: "K6.00", colorClass: "blue", key: "BLUE" };
-    }
-    if (code === "yellow children (6-17)" || code.includes("yellow children") || (code.includes("yellow") && code.includes("6-17"))) {
-      return { type: "🐤 Yellow Children (6-17)", amount: 3.00, amountFormatted: "K3.00", colorClass: "yellow", key: "YELLOW" };
-    }
+    if (code === "orange alumnae" || code.includes("orange alumnae")) return { type: "🍊 Orange Alumnae", amount: 6.00, amountFormatted: "K6.00", colorClass: "orange", key: "ORANGE" };
+    if (code === "blue friends & family" || (code.includes("blue friends") && code.includes("family")) || code.includes("friends & family")) return { type: "💙 Blue Friends & Family", amount: 6.00, amountFormatted: "K6.00", colorClass: "blue", key: "BLUE" };
+    if (code === "yellow children (6-17)" || code.includes("yellow children") || (code.includes("yellow") && code.includes("6-17"))) return { type: "🐤 Yellow Children (6-17)", amount: 3.00, amountFormatted: "K3.00", colorClass: "yellow", key: "YELLOW" };
     if (rawCode === "Orange Alumnae") return { type: "🍊 Orange Alumnae", amount: 6.00, amountFormatted: "K6.00", colorClass: "orange", key: "ORANGE" };
     if (rawCode === "Blue Friends & Family") return { type: "💙 Blue Friends & Family", amount: 6.00, amountFormatted: "K6.00", colorClass: "blue", key: "BLUE" };
     if (rawCode === "Yellow Children (6-17)") return { type: "🐤 Yellow Children (6-17)", amount: 3.00, amountFormatted: "K3.00", colorClass: "yellow", key: "YELLOW" };
     return null;
   }
   
-  // ---------- PERSISTENT STORAGE (receipts + used codes) ----------
-  const STORAGE_RECEIPTS = "secure_ticket_receipts_v3";
-  const STORAGE_USED_CODES = "used_ticket_codes_set";
-  
+  // ---------- Persistence (receipts + usedCodesSet) ----------
+  const STORAGE_RECEIPTS = "ticketpay_receipts_v4";
+  const STORAGE_USED_CODES = "ticketpay_used_codes";
   let receiptsStore = [];
-  let usedCodesSet = new Set();   // stores normalized raw codes that have been used
+  let usedCodesSet = new Set();  // stores normalized rawCode strings
   
   function loadData() {
     const storedReceipts = localStorage.getItem(STORAGE_RECEIPTS);
-    if (storedReceipts) {
-      try {
-        receiptsStore = JSON.parse(storedReceipts);
-        if (!Array.isArray(receiptsStore)) receiptsStore = [];
-      } catch(e) { receiptsStore = []; }
-    }
+    if (storedReceipts) try { receiptsStore = JSON.parse(storedReceipts); if (!Array.isArray(receiptsStore)) receiptsStore = []; } catch(e) { receiptsStore = []; }
     const storedUsed = localStorage.getItem(STORAGE_USED_CODES);
-    if (storedUsed) {
-      try {
-        const arr = JSON.parse(storedUsed);
-        if (Array.isArray(arr)) usedCodesSet = new Set(arr);
-      } catch(e) { usedCodesSet = new Set(); }
+    if (storedUsed) try { const arr = JSON.parse(storedUsed); if (Array.isArray(arr)) usedCodesSet = new Set(arr); } catch(e) { usedCodesSet = new Set(); }
+  }
+  function saveReceipts() { localStorage.setItem(STORAGE_RECEIPTS, JSON.stringify(receiptsStore)); }
+  function saveUsedCodes() { localStorage.setItem(STORAGE_USED_CODES, JSON.stringify([...usedCodesSet])); }
+  function markCodeAsUsed(rawCode) { const norm = rawCode.trim(); usedCodesSet.add(norm); saveUsedCodes(); updateDemoQrStatus(); }
+  function isCodeUsed(rawCode) { return usedCodesSet.has(rawCode.trim()); }
+  
+  // Reset a specific ticket code: remove from usedCodesSet, delete all receipts with that rawCode, refresh UI
+  function resetTicketCode(rawCode) {
+    const norm = rawCode.trim();
+    if (!usedCodesSet.has(norm) && !receiptsStore.some(r => r.rawCode === norm)) {
+      showToast(`Code "${norm}" is not used or already clean.`, false);
+      return;
     }
-  }
-  
-  function saveReceipts() {
-    localStorage.setItem(STORAGE_RECEIPTS, JSON.stringify(receiptsStore));
-  }
-  
-  function saveUsedCodes() {
-    localStorage.setItem(STORAGE_USED_CODES, JSON.stringify([...usedCodesSet]));
-  }
-  
-  function markCodeAsUsed(rawCode) {
-    const normalized = rawCode.trim();
-    usedCodesSet.add(normalized);
+    // Remove from used set
+    if (usedCodesSet.has(norm)) usedCodesSet.delete(norm);
+    // Delete all receipts that have this rawCode
+    const beforeCount = receiptsStore.length;
+    receiptsStore = receiptsStore.filter(r => r.rawCode !== norm);
+    if (beforeCount !== receiptsStore.length) saveReceipts();
     saveUsedCodes();
-    updateDemoQrInvalidStatus(normalized);
+    renderReceiptsList();
+    refreshAllDemoQrStatus();
+    // Clear detailed view if the shown receipt belonged to this code
+    const detailDiv = document.getElementById('detailedReceiptView');
+    if (detailDiv.innerText.includes(norm)) detailDiv.innerHTML = `<div style="text-align:center;">🔄 Code reset. Scan again to generate new receipt.</div>`;
+    showToast(`✅ Code "${norm}" is now reusable. Old receipt(s) removed.`, false);
+    // Also re-render demo QR status
   }
   
-  function isCodeAlreadyUsed(rawCode) {
-    return usedCodesSet.has(rawCode.trim());
-  }
-  
-  // Helper to update demo QR visual status if matches
-  function updateDemoQrInvalidStatus(usedCode) {
-    const demoQrItems = document.querySelectorAll('.qr-card');
-    demoQrItems.forEach(card => {
-      const textElem = card.querySelector('p');
-      if (textElem && textElem.innerText.trim() === usedCode) {
-        card.classList.add('invalid-card');
-      }
-    });
-  }
-  
-  // Refresh all demo QR validity based on usedCodesSet
-  function refreshAllDemoQrStatus() {
-    const demoQrItems = document.querySelectorAll('.qr-card');
-    demoQrItems.forEach(card => {
-      const textElem = card.querySelector('p');
-      if (textElem) {
-        const codeText = textElem.innerText.trim();
-        if (usedCodesSet.has(codeText)) {
-          card.classList.add('invalid-card');
-        } else {
-          card.classList.remove('invalid-card');
-        }
-      }
-    });
-  }
-  
-  // Generate secure receipt ID
-  function generateSecureReceiptId() {
-    const randomPart = crypto.getRandomValues ? 
-      Array.from(crypto.getRandomValues(new Uint8Array(8))).map(b => b.toString(16).padStart(2,'0')).join('') :
-      Math.random().toString(36).substring(2, 10);
-    return `RCPT-${Date.now()}-${randomPart}`;
-  }
-  
+  // Create new receipt (used after validating one-time)
+  function generateSecureReceiptId() { const rand = crypto.getRandomValues ? Array.from(crypto.getRandomValues(new Uint8Array(6))).map(b=>b.toString(16).padStart(2,'0')).join('') : Math.random().toString(36).substring(2,10); return `RCPT-${Date.now()}-${rand}`; }
   function createReceiptFromScan(rawCode, ticketInfo) {
-    const receiptId = generateSecureReceiptId();
-    const now = new Date();
-    const formattedDate = now.toLocaleString('en-PG', { hour12: false });
-    const uniqueLink = `#/receipt/${receiptId}`;
     return {
-      id: receiptId,
-      ticketType: ticketInfo.type,
-      amountFormatted: ticketInfo.amountFormatted,
-      amountNumeric: ticketInfo.amount,
-      rawCode: rawCode,
-      timestamp: now.getTime(),
-      dateHuman: formattedDate,
-      uniqueReceiptLink: uniqueLink,
-      colorClass: ticketInfo.colorClass,
-      transactionId: `TXN-${Math.floor(Math.random()*10000000)}-${receiptId.slice(-4)}`,
-      status: "PAID"
+      id: generateSecureReceiptId(), ticketType: ticketInfo.type, amountFormatted: ticketInfo.amountFormatted, amountNumeric: ticketInfo.amount,
+      rawCode: rawCode.trim(), timestamp: Date.now(), dateHuman: new Date().toLocaleString('en-PG', {hour12:false}),
+      uniqueReceiptLink: `#/receipt/${generateSecureReceiptId().slice(0,20)}${Math.floor(Math.random()*1000)}`, // unique per receipt
+      colorClass: ticketInfo.colorClass, transactionId: `TXN-${Math.floor(Math.random()*10000000)}`, status: "PAID"
     };
   }
   
-  // Core: generate receipt with one-time enforcement
+  // Main payment + one-time enforcement
   function generateReceiptFromCode(rawCode, source = "scan") {
-    if (!rawCode || rawCode.trim() === "") {
-      showToast("❌ Empty ticket code.", true);
-      return false;
-    }
-    const normalizedCode = rawCode.trim();
-    // Check if already used
-    if (isCodeAlreadyUsed(normalizedCode)) {
-      showToast(`⛔ This ticket code "${normalizedCode}" has already been used and is INVALID.`, true);
-      return false;
-    }
-    const ticketData = detectTicketTypeAndPrice(normalizedCode);
-    if (!ticketData) {
-      showToast(`❌ Unrecognized ticket: "${normalizedCode}". Valid: Orange Alumnae, Blue Friends & Family, Yellow Children (6-17)`, true);
-      return false;
-    }
-    // Mark as used immediately to prevent race conditions
-    markCodeAsUsed(normalizedCode);
-    const newReceipt = createReceiptFromScan(normalizedCode, ticketData);
+    if (!rawCode || rawCode.trim() === "") { showToast("Empty ticket code", true); return false; }
+    const norm = rawCode.trim();
+    if (isCodeUsed(norm)) { showToast(`⛔ Code "${norm}" already used. Use "Reset" to reactivate.`, true); return false; }
+    const ticketData = detectTicketTypeAndPrice(norm);
+    if (!ticketData) { showToast(`❌ Unrecognized: "${norm}". Valid codes: Orange Alumnae, Blue Friends & Family, Yellow Children (6-17)`, true); return false; }
+    // Mark used & create receipt
+    markCodeAsUsed(norm);
+    const newReceipt = createReceiptFromScan(norm, ticketData);
     receiptsStore.unshift(newReceipt);
     saveReceipts();
     renderReceiptsList();
     displayDetailedReceipt(newReceipt);
-    showToast(`✅ Payment success! ${ticketData.amountFormatted} for ${ticketData.type}. This QR is now invalid.`, false);
+    showToast(`✅ Payment ${ticketData.amountFormatted} for ${ticketData.type}. QR now invalid.`, false);
     return true;
   }
   
-  function showToast(message, isError = false) {
-    const toast = document.createElement('div');
-    toast.className = 'toast-alert';
-    if (!isError) toast.style.background = "#14532d";
-    toast.innerText = message;
-    document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 3200);
-  }
-  
-  // Render receipts list with links
+  // Render receipt list with reset button for each receipt
   function renderReceiptsList() {
-    const historyContainer = document.getElementById('receiptsHistory');
-    if (!receiptsStore.length) {
-      historyContainer.innerHTML = `<div class="empty-text">📭 No receipts generated.</div>`;
-      return;
-    }
+    const container = document.getElementById('receiptsHistory');
+    if (!receiptsStore.length) { container.innerHTML = `<div class="empty-text">📭 No receipts generated.</div>`; return; }
     let html = '';
     for (const rc of receiptsStore) {
       const fullLink = `${window.location.origin}${window.location.pathname}${rc.uniqueReceiptLink}`;
       html += `
-        <div class="receipt-item ${rc.colorClass}" data-id="${escapeHtml(rc.id)}">
+        <div class="receipt-item ${rc.colorClass}" data-id="${escapeHtml(rc.id)}" data-rawcode="${escapeHtml(rc.rawCode)}">
           <div class="flex-between">
             <strong>${escapeHtml(rc.ticketType)}</strong>
             <span class="paid-badge">${escapeHtml(rc.amountFormatted)}</span>
           </div>
-          <div style="font-size:0.75rem; margin-top: 6px;">🕒 ${escapeHtml(rc.dateHuman)}</div>
-          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;">
+          <div style="font-size:0.75rem;">🕒 ${escapeHtml(rc.dateHuman)}</div>
+          <div class="flex-between" style="margin-top: 4px;">
             <span class="receipt-link">🔗 ${escapeHtml(fullLink)}</span>
-            <button class="copy-btn" data-link="${escapeHtml(fullLink)}">📋 Copy link</button>
+            <div><button class="copy-btn" data-link="${escapeHtml(fullLink)}">📋 Link</button>
+            <button class="reset-code-btn small-reset" data-code="${escapeHtml(rc.rawCode)}">⟳ Reset code</button></div>
           </div>
-          <div style="font-size:0.7rem;">🧾 ID: ${escapeHtml(rc.id)}</div>
+          <div style="font-size:0.7rem;">ID: ${escapeHtml(rc.id)}</div>
         </div>
       `;
     }
-    historyContainer.innerHTML = html;
+    container.innerHTML = html;
+    // Attach copy & reset events
     document.querySelectorAll('.copy-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const link = btn.getAttribute('data-link');
-        navigator.clipboard.writeText(link).then(() => {
-          btn.innerText = "✓ Copied!";
-          setTimeout(() => btn.innerText = "📋 Copy link", 1500);
-        });
-      });
+      btn.addEventListener('click', (e) => { e.stopPropagation(); const link = btn.getAttribute('data-link'); navigator.clipboard.writeText(link); btn.innerText = "✓ Copied!"; setTimeout(() => btn.innerText = "📋 Link", 1500); });
+    });
+    document.querySelectorAll('.reset-code-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => { e.stopPropagation(); const code = btn.getAttribute('data-code'); if(code) resetTicketCode(code); });
     });
     document.querySelectorAll('.receipt-item').forEach(item => {
-      item.addEventListener('click', () => {
-        const id = item.getAttribute('data-id');
-        const found = receiptsStore.find(r => r.id === id);
-        if (found) displayDetailedReceipt(found);
-      });
+      item.addEventListener('click', (e) => { if(e.target.classList.contains('reset-code-btn') || e.target.classList.contains('copy-btn')) return; const id = item.getAttribute('data-id'); const found = receiptsStore.find(r => r.id === id); if(found) displayDetailedReceipt(found); });
     });
   }
   
   function displayDetailedReceipt(receipt) {
-    const detailView = document.getElementById('detailedReceiptView');
+    const detail = document.getElementById('detailedReceiptView');
     const fullLink = `${window.location.origin}${window.location.pathname}${receipt.uniqueReceiptLink}`;
-    detailView.innerHTML = `
-      <div class="flex-between"><strong style="font-size:1.2rem;">🧾 OFFICIAL RECEIPT</strong><span class="paid-badge">✓ PAID</span></div>
-      <hr>
+    detail.innerHTML = `
+      <div class="flex-between"><strong>🧾 OFFICIAL RECEIPT</strong><span class="paid-badge">✓ PAID</span></div><hr>
       <div><strong>Ticket:</strong> ${escapeHtml(receipt.ticketType)}</div>
-      <div><strong>Amount:</strong> <span style="font-size:1.4rem;">${escapeHtml(receipt.amountFormatted)}</span> (PGK)</div>
-      <div><strong>Transaction ID:</strong> ${escapeHtml(receipt.transactionId)}</div>
+      <div><strong>Amount:</strong> <span style="font-size:1.4rem;">${escapeHtml(receipt.amountFormatted)}</span></div>
+      <div><strong>Transaction:</strong> ${escapeHtml(receipt.transactionId)}</div>
       <div><strong>Receipt ID:</strong> ${escapeHtml(receipt.id)}</div>
       <div><strong>Date:</strong> ${escapeHtml(receipt.dateHuman)}</div>
-      <div><strong>QR content:</strong> <code>${escapeHtml(receipt.rawCode)}</code></div>
-      <hr>
-      <div class="flex-between"><span><strong>🔗 Permanent Link:</strong></span><button id="copyDetailLinkBtn">📎 Copy link</button></div>
+      <div><strong>QR Content:</strong> <code>${escapeHtml(receipt.rawCode)}</code></div><hr>
+      <div class="flex-between"><span>🔗 Permanent Link:</span><button id="detailCopyBtn">📎 Copy link</button></div>
       <div style="background:#eef2ff; padding:0.5rem; border-radius:16px; word-break:break-all;">${escapeHtml(fullLink)}</div>
-      <div style="margin-top:12px; font-size:0.7rem;">🔒 One‑time ticket | This QR was invalidated after use.</div>
+      <div style="margin-top:8px;"><button id="detailResetBtn" class="small-reset" style="background:#92400e;">⟳ Reset this ticket code (reactivate QR)</button></div>
     `;
-    const copyBtn = document.getElementById('copyDetailLinkBtn');
-    if (copyBtn) copyBtn.addEventListener('click', () => {
-      navigator.clipboard.writeText(fullLink);
-      copyBtn.innerText = "✔️ Copied!";
-      setTimeout(() => copyBtn.innerText = "📎 Copy link", 1500);
-    });
+    document.getElementById('detailCopyBtn')?.addEventListener('click', () => { navigator.clipboard.writeText(fullLink); const btn = document.getElementById('detailCopyBtn'); btn.innerText = "✔️ Copied!"; setTimeout(() => btn.innerText = "📎 Copy link", 1500); });
+    document.getElementById('detailResetBtn')?.addEventListener('click', () => resetTicketCode(receipt.rawCode));
   }
   
   // Reset all data (receipts + used codes)
   function resetAllData() {
-    if (confirm("⚠️ PERMANENT ACTION: This will delete ALL receipts AND invalidate ALL used ticket records. QR codes will become usable again. Proceed?")) {
-      receiptsStore = [];
-      usedCodesSet.clear();
-      saveReceipts();
-      saveUsedCodes();
-      renderReceiptsList();
-      document.getElementById('detailedReceiptView').innerHTML = `<div style="text-align:center;">🗑️ All data reset. QR codes are now reusable.</div>`;
-      refreshAllDemoQrStatus();
-      showToast("All receipts and used-code records have been erased.", false);
+    if (confirm("⚠️ PERMANENT: Delete ALL receipts AND all used-code records? QR codes will become fully reusable.")) {
+      receiptsStore = []; usedCodesSet.clear(); saveReceipts(); saveUsedCodes(); renderReceiptsList();
+      document.getElementById('detailedReceiptView').innerHTML = `<div style="text-align:center;">🗑️ All data cleared. QR codes are reusable now.</div>`;
+      refreshAllDemoQrStatus(); showToast("All receipts & used flags removed.", false);
     }
   }
   
-  // Takings report from current receiptsStore
-  function generateTakingsReport() {
-    if (receiptsStore.length === 0) {
-      alert("No receipts found. Generate payments first.");
-      return;
-    }
-    let totalRevenue = 0;
-    let counts = { ORANGE: 0, BLUE: 0, YELLOW: 0 };
-    let revenueMap = { ORANGE: 0, BLUE: 0, YELLOW: 0 };
-    for (const r of receiptsStore) {
-      totalRevenue += r.amountNumeric;
-      if (r.ticketType.includes("Orange")) { counts.ORANGE++; revenueMap.ORANGE += r.amountNumeric; }
-      else if (r.ticketType.includes("Blue")) { counts.BLUE++; revenueMap.BLUE += r.amountNumeric; }
-      else if (r.ticketType.includes("Yellow")) { counts.YELLOW++; revenueMap.YELLOW += r.amountNumeric; }
-    }
-    const modal = document.getElementById('reportModal');
-    document.getElementById('reportStatsContainer').innerHTML = `
-      <div style="font-size:1.4rem; font-weight:800; text-align:center;">💰 TOTAL TAKINGS: K${totalRevenue.toFixed(2)}</div>
-      <hr><div>🍊 Orange Alumnae (K6.00): ${counts.ORANGE} tickets → K${revenueMap.ORANGE.toFixed(2)}</div>
-      <div>💙 Blue Friends & Family (K6.00): ${counts.BLUE} tickets → K${revenueMap.BLUE.toFixed(2)}</div>
-      <div>🐤 Yellow Children (K3.00): ${counts.YELLOW} tickets → K${revenueMap.YELLOW.toFixed(2)}</div>
-      <hr><div>📅 Total transactions: ${receiptsStore.length}</div>
-      <div>🕒 ${new Date().toLocaleString()}</div>
-    `;
-    modal.style.display = 'flex';
-    const exportBtn = document.getElementById('exportReportBtn');
-    const newExport = exportBtn.cloneNode(true);
-    exportBtn.parentNode.replaceChild(newExport, exportBtn);
-    newExport.addEventListener('click', () => {
-      let csvRows = [["ReceiptID","TicketType","Amount(K)","Date","TransactionID","RawCode"]];
-      receiptsStore.forEach(r => {
-        csvRows.push([r.id, r.ticketType, r.amountNumeric, r.dateHuman, r.transactionId, r.rawCode]);
-      });
-      csvRows.push(["TOTAL REVENUE","",totalRevenue.toFixed(2),"","",""]);
-      const csv = csvRows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\n");
-      const blob = new Blob(["\uFEFF" + csv], {type: "text/csv;charset=utf-8"});
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = "ticket_takings_report.csv";
-      a.click();
-      URL.revokeObjectURL(a.href);
+  // Demo QR UI & reset buttons on demo cards
+  function refreshAllDemoQrStatus() {
+    const cards = document.querySelectorAll('.qr-card');
+    cards.forEach(card => {
+      const p = card.querySelector('p');
+      if (p && usedCodesSet.has(p.innerText.trim())) card.classList.add('invalid-card');
+      else card.classList.remove('invalid-card');
+      // also ensure reset button inside demo card works (they have reset buttons already)
     });
   }
   
-  // ---------- QR SCANNER (one-time enforcement inside callback) ----------
-  let html5QrCode;
-  let isScanning = false;
-  function startScanner() {
-    if (isScanning) return;
-    const readerElem = document.getElementById('reader');
-    if (!readerElem) return;
-    if (html5QrCode) html5QrCode.clear().catch(console.warn);
-    html5QrCode = new Html5Qrcode("reader");
-    html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, 
-      (decodedText) => {
-        generateReceiptFromCode(decodedText, "scan");
-      }, 
-      (err) => {}
-    ).catch(err => { alert("Camera error: " + err); });
-    isScanning = true;
-  }
-  function stopScanner() {
-    if (html5QrCode && isScanning) {
-      html5QrCode.stop().then(() => isScanning = false).catch(console.warn);
-    } else isScanning = false;
-  }
-  
-  // ---------- DEMO QR CODES with one-time tracking ----------
   function buildDemoQRCodes() {
     const container = document.getElementById('demoQrContainer');
     if (!container) return;
@@ -667,71 +272,91 @@
     ];
     container.innerHTML = '';
     demoItems.forEach((item, idx) => {
-      const card = document.createElement('div');
-      card.className = 'qr-card';
+      const card = document.createElement('div'); card.className = 'qr-card';
       if (usedCodesSet.has(item.text)) card.classList.add('invalid-card');
-      const qrDiv = document.createElement('div');
-      qrDiv.id = `demoqr_${idx}`;
+      const qrDiv = document.createElement('div'); qrDiv.id = `demoqr_${idx}`;
       card.appendChild(qrDiv);
-      const label = document.createElement('p');
-      label.innerText = item.text;
-      const priceSpan = document.createElement('span');
-      priceSpan.className = 'badge-price';
-      priceSpan.innerText = item.price;
-      card.appendChild(label);
-      card.appendChild(priceSpan);
+      const label = document.createElement('p'); label.innerText = item.text;
+      const priceSpan = document.createElement('span'); priceSpan.className = 'badge-price'; priceSpan.innerText = item.price;
+      card.appendChild(label); card.appendChild(priceSpan);
+      const resetDemoBtn = document.createElement('button'); resetDemoBtn.innerText = "⟳ Reset this code"; resetDemoBtn.className = "small-reset"; resetDemoBtn.style.marginTop = "8px"; resetDemoBtn.style.fontSize = "0.65rem";
+      resetDemoBtn.addEventListener('click', (e) => { e.stopPropagation(); resetTicketCode(item.text); });
+      card.appendChild(resetDemoBtn);
       container.appendChild(card);
-      setTimeout(() => {
-        if (typeof QRCode !== 'undefined') new QRCode(qrDiv, { text: item.text, width: 100, height: 100 });
-      }, 20);
+      setTimeout(() => { if (typeof QRCode !== 'undefined') new QRCode(qrDiv, { text: item.text, width: 100, height: 100 }); }, 20);
     });
   }
   
-  // -------- HASH ROUTING --------
+  // Takings Report
+  function generateTakingsReport() {
+    if (!receiptsStore.length) { alert("No receipts found."); return; }
+    let total = 0, counts = { ORANGE:0, BLUE:0, YELLOW:0 }, rev = { ORANGE:0, BLUE:0, YELLOW:0 };
+    receiptsStore.forEach(r => { total += r.amountNumeric;
+      if (r.ticketType.includes("Orange")) { counts.ORANGE++; rev.ORANGE += r.amountNumeric; }
+      else if (r.ticketType.includes("Blue")) { counts.BLUE++; rev.BLUE += r.amountNumeric; }
+      else if (r.ticketType.includes("Yellow")) { counts.YELLOW++; rev.YELLOW += r.amountNumeric; }
+    });
+    const modal = document.getElementById('reportModal');
+    document.getElementById('reportStatsContainer').innerHTML = `
+      <div style="font-size:1.3rem; font-weight:800; text-align:center;">💰 TOTAL TAKINGS: K${total.toFixed(2)}</div><hr>
+      <div>🍊 Orange Alumnae (K6): ${counts.ORANGE} tickets → K${rev.ORANGE.toFixed(2)}</div>
+      <div>💙 Blue Friends & Family (K6): ${counts.BLUE} tickets → K${rev.BLUE.toFixed(2)}</div>
+      <div>🐤 Yellow Children (K3): ${counts.YELLOW} tickets → K${rev.YELLOW.toFixed(2)}</div><hr>
+      <div>📅 Total transactions: ${receiptsStore.length}</div><div>🕒 ${new Date().toLocaleString()}</div>
+    `;
+    modal.style.display = 'flex';
+    const exportBtn = document.getElementById('exportReportBtn');
+    const newExport = exportBtn.cloneNode(true);
+    exportBtn.parentNode.replaceChild(newExport, exportBtn);
+    newExport.addEventListener('click', () => {
+      let csv = [["ReceiptID","TicketType","Amount(K)","Date","TransactionID","RawCode"]];
+      receiptsStore.forEach(r => csv.push([r.id, r.ticketType, r.amountNumeric, r.dateHuman, r.transactionId, r.rawCode]));
+      csv.push(["TOTAL REVENUE","",total.toFixed(2),"","",""]);
+      const blob = new Blob(["\uFEFF" + csv.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\n")], {type:"text/csv"});
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = "takings_report.csv"; a.click(); URL.revokeObjectURL(a.href);
+    });
+  }
+  
+  // QR Scanner
+  let html5QrCode, isScanning = false;
+  function startScanner() {
+    if (isScanning) return;
+    if (html5QrCode) html5QrCode.clear().catch(()=>{});
+    html5QrCode = new Html5Qrcode("reader");
+    html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (decoded) => generateReceiptFromCode(decoded, "scan"), (err) => {}).catch(e => alert("Camera error: "+e));
+    isScanning = true;
+  }
+  function stopScanner() { if (html5QrCode && isScanning) { html5QrCode.stop().then(()=>isScanning=false).catch(()=>{}); } else isScanning = false; }
+  
+  // Hash routing
   function handleHashRouting() {
     const hash = window.location.hash;
     if (hash && hash.startsWith('#/receipt/')) {
-      const id = hash.split('#/receipt/')[1];
-      const found = receiptsStore.find(r => r.id === id);
+      const idPart = hash.split('#/receipt/')[1];
+      const found = receiptsStore.find(r => r.uniqueReceiptLink.includes(idPart) || r.id === idPart);
       if (found) displayDetailedReceipt(found);
-      else document.getElementById('detailedReceiptView').innerHTML = `<div style="background:#fff0f0; padding:1rem; border-radius:1rem;">⚠️ Receipt not found.</div>`;
     }
   }
   
-  // ---------- INITIALIZE ----------
+  // Initialize UI and event listeners
   function init() {
     loadData();
     renderReceiptsList();
-    handleHashRouting();
     buildDemoQRCodes();
     refreshAllDemoQrStatus();
-    
-    document.getElementById('manualGenBtn').addEventListener('click', () => {
-      const val = document.getElementById('manualCodeInput').value.trim();
-      if (val) generateReceiptFromCode(val);
-      else showToast("Enter a ticket code", true);
-      document.getElementById('manualCodeInput').value = '';
-    });
+    handleHashRouting();
+    document.getElementById('manualGenBtn').addEventListener('click', () => { const val = document.getElementById('manualCodeInput').value.trim(); if(val) generateReceiptFromCode(val); else showToast("Enter ticket code", true); document.getElementById('manualCodeInput').value = ''; });
     document.getElementById('stopScannerBtn').addEventListener('click', stopScanner);
     document.getElementById('clearAllDataBtn').addEventListener('click', resetAllData);
     document.getElementById('reportTakingsBtn').addEventListener('click', generateTakingsReport);
     const modal = document.getElementById('reportModal');
     document.getElementById('closeModalBtn').addEventListener('click', () => modal.style.display = 'none');
-    window.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
+    window.addEventListener('click', (e) => { if(e.target === modal) modal.style.display = 'none'; });
     window.addEventListener('hashchange', handleHashRouting);
-    
     const scannerBox = document.querySelector('.scanner-box');
-    const startBtn = document.createElement('button');
-    startBtn.innerText = "📸 Start Camera Scanner";
-    startBtn.style.background = "#2c553c";
-    startBtn.style.width = "100%";
-    startBtn.style.marginBottom = "12px";
+    const startBtn = document.createElement('button'); startBtn.innerText = "📸 Start Camera Scanner"; startBtn.style.background = "#2c553c"; startBtn.style.width = "100%"; startBtn.style.marginBottom = "12px";
     scannerBox.insertBefore(startBtn, scannerBox.firstChild);
-    startBtn.addEventListener('click', () => {
-      startScanner();
-      startBtn.style.display = 'none';
-      document.getElementById('stopScannerBtn').style.display = 'inline-block';
-    });
+    startBtn.addEventListener('click', () => { startScanner(); startBtn.style.display = 'none'; document.getElementById('stopScannerBtn').style.display = 'inline-block'; });
     document.getElementById('stopScannerBtn').style.display = 'none';
   }
   init();
