@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-  <title>Smart Ticket Pay | QR Scan Receipt Automation</title>
-  <!-- html5-qrcode scanner library -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self';">
+  <title>Secure TicketPay | Persistent Receipts & Takings Report</title>
+  <!-- html5-qrcode scanner library & QRCode generator -->
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-  <!-- QR code generator for demo tickets -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <style>
     * {
@@ -54,8 +54,6 @@
       border-radius: 2rem;
       padding: 1.5rem;
       box-shadow: 0 20px 35px -12px rgba(0,0,0,0.1);
-      backdrop-filter: blur(2px);
-      transition: all 0.2s;
     }
     .receipt-panel {
       flex: 2;
@@ -85,15 +83,6 @@
       text-align: center;
       width: 140px;
       box-shadow: 0 6px 12px -6px rgba(0,0,0,0.1);
-      transition: transform 0.1s;
-    }
-    .qr-card p {
-      font-weight: 600;
-      margin: 0.5rem 0 0;
-      font-size: 0.75rem;
-      background: #f1f5f9;
-      padding: 0.2rem;
-      border-radius: 30px;
     }
     .badge-price {
       font-size: 0.7rem;
@@ -120,6 +109,9 @@
     }
     button.warning {
       background: #b91c1c;
+    }
+    button.report-btn {
+      background: #2c5f2d;
     }
     button:hover {
       opacity: 0.85;
@@ -162,7 +154,6 @@
       padding: 0.8rem;
       margin-bottom: 0.7rem;
       border-left: 5px solid;
-      transition: all 0.1s;
       cursor: pointer;
     }
     .receipt-item.orange { border-left-color: #f97316; }
@@ -213,6 +204,36 @@
       text-align: center;
       padding: 1rem;
     }
+    /* Modal for report */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6);
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+    .modal-content {
+      background: white;
+      max-width: 500px;
+      width: 90%;
+      border-radius: 2rem;
+      padding: 1.8rem;
+      box-shadow: 0 25px 40px rgba(0,0,0,0.3);
+      animation: fadeIn 0.2s;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.96);}
+      to { opacity: 1; transform: scale(1);}
+    }
+    .report-stats {
+      background: #f1f5f9;
+      border-radius: 1.5rem;
+      padding: 1rem;
+      margin: 1rem 0;
+    }
     footer {
       text-align: center;
       margin-top: 2rem;
@@ -229,91 +250,137 @@
 <div class="container">
   <div class="flex-between">
     <div>
-      <h1>🎟️ TicketPay • AutoReceipt</h1>
-      <div class="sub">Scan QR code → instant payment receipt → unique link for each ticket</div>
+      <h1>🔒 TicketPay • Secure Receipts</h1>
+      <div class="sub">Persistent storage | Auto-receipts | Full takings report | Secure validation</div>
     </div>
-    <button id="clearAllReceipts" class="warning" style="background:#991b1b;">🗑️ Clear receipts</button>
+    <div style="display: flex; gap: 10px;">
+      <button id="reportTakingsBtn" class="report-btn">📊 Generate Takings Report</button>
+      <button id="clearAllReceipts" class="warning" style="background:#991b1b;">🗑️ Clear all receipts</button>
+    </div>
   </div>
 
   <div class="dashboard">
-    <!-- LEFT: SCANNER + DEMO QR -->
+    <!-- SCANNER PANEL -->
     <div class="scan-panel">
       <h3>📷 QR Scanner</h3>
-      <p style="font-size: 0.85rem; color:#334155;">Position any QR code (Orange Alumnae, Blue Friends & Family, Yellow Children 6-17) to pay & get receipt</p>
+      <p style="font-size: 0.85rem; color:#334155;">Scan ticket QR (Orange Alumnae, Blue Friends & Family, Yellow Children 6-17)</p>
       <div class="scanner-box">
         <div id="reader" style="width:100%"></div>
       </div>
       <div class="manual-input">
-        <input type="text" id="manualCodeInput" placeholder="Or type ticket code (e.g. Orange Alumnae)" autocomplete="off">
+        <input type="text" id="manualCodeInput" placeholder="Or type exact ticket code" autocomplete="off">
         <button id="manualGenBtn">📄 Generate Receipt</button>
       </div>
-      <button id="stopScannerBtn" class="secondary" style="background:#4b5563; margin-top: 0.2rem;">⏹️ Stop Camera</button>
+      <button id="stopScannerBtn" class="secondary" style="background:#4b5563;">⏹️ Stop Camera</button>
       <div class="qr-demo-section">
-        <strong>🔽 Demo QR codes (scan directly from screen)</strong>
-        <div class="demo-cards" id="demoQrContainer">
-          <!-- dynamic QR codes will be injected -->
-        </div>
-        <p style="font-size:12px; margin-top:8px;">⬆️ point camera to any QR above → automatic receipt generation</p>
+        <strong>🔽 Demo QR codes (scanable)</strong>
+        <div class="demo-cards" id="demoQrContainer"></div>
+        <p style="font-size:12px; margin-top:8px;">⬆️ Scan any → automatic receipt + persistent storage</p>
       </div>
     </div>
 
-    <!-- RIGHT: RECEIPTS & UNIQUE LINKS -->
+    <!-- RECEIPTS & REPORT PANEL -->
     <div class="receipt-panel">
       <div class="flex-between">
-        <h3>🧾 Recent receipts & unique links</h3>
-        <span style="font-size: 0.7rem;">⚡ each scan = unique receipt URL</span>
+        <h3>🧾 Permanent Receipts (saved)</h3>
+        <span style="font-size: 0.7rem;">⚡ unique secure links</span>
       </div>
       <div id="receiptsHistory" class="receipt-list">
-        <div class="empty-text">✨ No receipts yet. Scan a ticket QR code above.</div>
+        <div class="empty-text">💾 No receipts yet. Scan a ticket QR code.</div>
       </div>
-      <!-- Detailed receipt viewer -->
       <div id="detailedReceiptView" class="detail-receipt">
-        <div style="text-align:center; color:#6c757d;">📌 Click on any receipt to view full details & shareable link</div>
+        <div style="text-align:center; color:#6c757d;">🔍 Click any receipt to view details & shareable secure link</div>
       </div>
     </div>
   </div>
-  <footer>✅ Automated system: scan "Orange Alumnae" / "Blue Friends & Family" → K6.00 | "Yellow Children (6-17)" → K3.00. Each receipt gets permanent unique link.</footer>
+  <footer>🔐 Secure storage | All receipts saved locally | Each transaction generates unique, non-guessable receipt ID | Full takings report with totals & breakdown</footer>
+</div>
+
+<!-- Modal for takings report -->
+<div id="reportModal" class="modal">
+  <div class="modal-content">
+    <div class="flex-between">
+      <h3>📈 Financial Takings Report</h3>
+      <button id="closeModalBtn" style="background:#6c757d; padding: 0.3rem 0.8rem;">✖️ Close</button>
+    </div>
+    <div id="reportStatsContainer" class="report-stats">
+      <!-- dynamic report content loaded -->
+    </div>
+    <button id="exportReportBtn" style="background:#1e4620; width:100%; margin-top: 0.8rem;">📎 Export Report (CSV)</button>
+  </div>
 </div>
 
 <script>
-  // ---------- TICKET PRICE MAPPING (smart detection) ----------
+  // -------------------- SECURE HELPERS --------------------
+  function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, function(m) {
+      if (m === '&') return '&amp;';
+      if (m === '<') return '&lt;';
+      if (m === '>') return '&gt;';
+      return m;
+    }).replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, function(c) {
+      return c;
+    });
+  }
+
+  // -------------------- TICKET PRICE MAPPING (secure detection) --------------------
   function detectTicketTypeAndPrice(rawCode) {
-    if (!rawCode) return null;
+    if (!rawCode || typeof rawCode !== 'string') return null;
     const code = rawCode.trim().toLowerCase();
     // Orange Alumnae
-    if (code.includes("orange alumnae")) {
+    if (code === "orange alumnae" || code.includes("orange alumnae")) {
       return { type: "🍊 Orange Alumnae", amount: 6.00, amountFormatted: "K6.00", colorClass: "orange", key: "ORANGE" };
     }
     // Blue Friends & Family
-    if (code.includes("blue friends") || (code.includes("blue") && code.includes("family")) || code.includes("friends & family")) {
+    if (code === "blue friends & family" || (code.includes("blue friends") && code.includes("family")) || code.includes("friends & family")) {
       return { type: "💙 Blue Friends & Family", amount: 6.00, amountFormatted: "K6.00", colorClass: "blue", key: "BLUE" };
     }
-    // Yellow Children (age 6-17)
-    if ((code.includes("yellow") && code.includes("children")) || (code.includes("yellow") && code.includes("age")) || (code.includes("6-17")) || (code === "yellow children age 6-17") || (code.includes("yellow children"))) {
+    // Yellow Children (6-17)
+    if (code === "yellow children (6-17)" || code.includes("yellow children") || (code.includes("yellow") && code.includes("6-17"))) {
       return { type: "🐤 Yellow Children (6-17)", amount: 3.00, amountFormatted: "K3.00", colorClass: "yellow", key: "YELLOW" };
     }
-    // exact fallback for exact matches
+    // strict fallbacks
     if (rawCode === "Orange Alumnae") return { type: "🍊 Orange Alumnae", amount: 6.00, amountFormatted: "K6.00", colorClass: "orange", key: "ORANGE" };
     if (rawCode === "Blue Friends & Family") return { type: "💙 Blue Friends & Family", amount: 6.00, amountFormatted: "K6.00", colorClass: "blue", key: "BLUE" };
-    if (rawCode === "Yellow Children (6-17)" || rawCode === "yellow children age 6-17") return { type: "🐤 Yellow Children (6-17)", amount: 3.00, amountFormatted: "K3.00", colorClass: "yellow", key: "YELLOW" };
-    
+    if (rawCode === "Yellow Children (6-17)") return { type: "🐤 Yellow Children (6-17)", amount: 3.00, amountFormatted: "K3.00", colorClass: "yellow", key: "YELLOW" };
     return null;
   }
 
-  // ---------- store receipts (unique ID + link) ----------
-  let receiptsStore = [];     // each { id, ticketType, amountFormatted, amountNumeric, rawCode, timestamp, uniqueReceiptLink, colorClass }
+  // -------------------- PERSISTENT STORAGE (localStorage) --------------------
+  const STORAGE_KEY = "secure_ticket_receipts_v2";
   
-  // Helper: generate unique ID and receipt link (hash based)
-  function generateUniqueReceiptId() {
-    return "RCPT-" + Date.now() + "-" + Math.random().toString(36).substring(2, 10).toUpperCase();
+  function loadReceiptsFromStorage() {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) return parsed;
+      } catch(e) { console.warn("Failed parse", e); }
+    }
+    return [];
   }
   
-  // create receipt object
+  function saveReceiptsToStorage(receiptsArray) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(receiptsArray));
+  }
+  
+  // Global store
+  let receiptsStore = loadReceiptsFromStorage();
+  
+  // Helper: unique receipt ID with crypto randomness (secure)
+  function generateSecureReceiptId() {
+    const randomPart = crypto.getRandomValues ? 
+      Array.from(crypto.getRandomValues(new Uint8Array(8))).map(b => b.toString(16).padStart(2,'0')).join('') :
+      Math.random().toString(36).substring(2, 10);
+    return `RCPT-${Date.now()}-${randomPart}`;
+  }
+  
   function createReceiptFromScan(rawCode, ticketInfo) {
-    const receiptId = generateUniqueReceiptId();
+    const receiptId = generateSecureReceiptId();
     const now = new Date();
     const formattedDate = now.toLocaleString('en-PG', { hour12: false });
-    const uniqueLink = `#/receipt/${receiptId}`;   // hash fragment unique format
+    const uniqueLink = `#/receipt/${receiptId}`;
     return {
       id: receiptId,
       ticketType: ticketInfo.type,
@@ -324,34 +391,45 @@
       dateHuman: formattedDate,
       uniqueReceiptLink: uniqueLink,
       colorClass: ticketInfo.colorClass,
-      transactionId: `TXN-${Math.floor(Math.random()*1000000)}`,
+      transactionId: `TXN-${Math.floor(Math.random()*10000000)}-${receiptId.slice(-4)}`,
       status: "PAID"
     };
   }
   
-  // render receipt history list + update unique links
+  // Render receipt history + attach copy & click handlers (secure innerHTML using escape)
   function renderReceiptsList() {
     const historyContainer = document.getElementById('receiptsHistory');
     if (!receiptsStore.length) {
-      historyContainer.innerHTML = `<div class="empty-text">📭 No receipts yet. Scan a ticket QR code above.</div>`;
+      historyContainer.innerHTML = `<div class="empty-text">📭 No receipts yet. Scan a ticket QR code.</div>`;
       return;
     }
-    historyContainer.innerHTML = receiptsStore.map(rc => `
-      <div class="receipt-item ${rc.colorClass}" data-id="${rc.id}">
-        <div class="flex-between">
-          <strong>${rc.ticketType}</strong>
-          <span class="paid-badge">${rc.amountFormatted}</span>
+    // Build each receipt using safe methods (textContent, but we use innerHTML with escaped data)
+    let htmlString = '';
+    for (const rc of receiptsStore) {
+      const fullLink = `${window.location.origin}${window.location.pathname}${rc.uniqueReceiptLink}`;
+      const escapedTicket = escapeHtml(rc.ticketType);
+      const escapedAmount = escapeHtml(rc.amountFormatted);
+      const escapedDate = escapeHtml(rc.dateHuman);
+      const escapedLink = escapeHtml(fullLink);
+      const escapedId = escapeHtml(rc.id);
+      htmlString += `
+        <div class="receipt-item ${rc.colorClass}" data-id="${escapeHtml(rc.id)}">
+          <div class="flex-between">
+            <strong>${escapedTicket}</strong>
+            <span class="paid-badge">${escapedAmount}</span>
+          </div>
+          <div style="font-size:0.75rem; margin-top: 6px;">🕒 ${escapedDate}</div>
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;">
+            <span class="receipt-link" style="font-size:0.68rem;">🔗 ${escapedLink}</span>
+            <button class="copy-btn" data-link="${escapedLink}" style="background:#2c3e66;">📋 Copy link</button>
+          </div>
+          <div style="font-size:0.7rem; margin-top:6px;">🧾 ID: ${escapedId}</div>
         </div>
-        <div style="font-size:0.75rem; margin-top: 6px;">🕒 ${rc.dateHuman}</div>
-        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;">
-          <span class="receipt-link" style="font-size:0.68rem;">🔗 ${window.location.origin}${window.location.pathname}${rc.uniqueReceiptLink}</span>
-          <button class="copy-btn" data-link="${window.location.origin}${window.location.pathname}${rc.uniqueReceiptLink}" style="background:#2c3e66;">📋 Copy link</button>
-        </div>
-        <div style="font-size:0.7rem; margin-top:6px;">🧾 ID: ${rc.id}</div>
-      </div>
-    `).join('');
+      `;
+    }
+    historyContainer.innerHTML = htmlString;
     
-    // attach copy events dynamically
+    // Attach copy events
     document.querySelectorAll('.copy-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -363,7 +441,7 @@
       });
     });
     
-    // attach click on receipt item to show full detailed receipt
+    // Attach click on receipt item to show detailed receipt
     document.querySelectorAll('.receipt-item').forEach(item => {
       item.addEventListener('click', (e) => {
         const id = item.getAttribute('data-id');
@@ -373,85 +451,80 @@
     });
   }
   
-  // Show full receipt in right panel, also shows unique link / print style
+  // display detailed receipt securely
   function displayDetailedReceipt(receipt) {
     const detailView = document.getElementById('detailedReceiptView');
     const fullReceiptLink = `${window.location.origin}${window.location.pathname}${receipt.uniqueReceiptLink}`;
+    const escapedType = escapeHtml(receipt.ticketType);
+    const escapedAmount = escapeHtml(receipt.amountFormatted);
+    const escapedTxn = escapeHtml(receipt.transactionId);
+    const escapedId = escapeHtml(receipt.id);
+    const escapedDate = escapeHtml(receipt.dateHuman);
+    const escapedRawCode = escapeHtml(receipt.rawCode);
+    const escapedLink = escapeHtml(fullReceiptLink);
     detailView.innerHTML = `
       <div style="display:flex; justify-content:space-between;">
         <strong style="font-size:1.2rem;">🧾 OFFICIAL RECEIPT</strong>
-        <span class="paid-badge" style="background:#15803d;">✓ PAYMENT COMPLETED</span>
+        <span class="paid-badge" style="background:#15803d;">✓ VERIFIED</span>
       </div>
       <hr>
-      <div><strong>Ticket Type:</strong> ${receipt.ticketType}</div>
-      <div><strong>Amount Paid:</strong> <span style="font-size:1.4rem; font-weight:800;">${receipt.amountFormatted}</span> (PGK Kina)</div>
-      <div><strong>Transaction ID:</strong> ${receipt.transactionId}</div>
-      <div><strong>Receipt ID:</strong> ${receipt.id}</div>
-      <div><strong>Payment Date:</strong> ${receipt.dateHuman}</div>
-      <div><strong>Payment Method:</strong> 💳 QR Code Scan (Auto)</div>
-      <div><strong>QR content:</strong> <code style="background:#f1f3f4;">${receipt.rawCode}</code></div>
+      <div><strong>Ticket Type:</strong> ${escapedType}</div>
+      <div><strong>Amount Paid:</strong> <span style="font-size:1.4rem; font-weight:800;">${escapedAmount}</span> (PGK Kina)</div>
+      <div><strong>Transaction ID:</strong> ${escapedTxn}</div>
+      <div><strong>Receipt ID:</strong> ${escapedId}</div>
+      <div><strong>Payment Date:</strong> ${escapedDate}</div>
+      <div><strong>Payment Method:</strong> 💳 QR Secure Scan</div>
+      <div><strong>QR content:</strong> <code style="background:#f1f3f4;">${escapedRawCode}</code></div>
       <hr>
       <div class="flex-between">
-        <span><strong>🔗 Permanent Receipt Link:</strong></span>
-        <button id="copyDetailLinkBtn" style="background:#0f3b2c; padding:0.3rem 1rem;">📎 Copy unique link</button>
+        <span><strong>🔗 Permanent Secure Link:</strong></span>
+        <button id="copyDetailLinkBtn" style="background:#0f3b2c; padding:0.3rem 1rem;">📎 Copy link</button>
       </div>
-      <div style="background:#eef2ff; padding:0.5rem; border-radius:16px; margin-top:6px; word-break:break-all; font-family:monospace; font-size:0.75rem;">${fullReceiptLink}</div>
-      <div style="margin-top: 12px; text-align:center; font-size:0.7rem; color:#4a5b6e;">✅ This ticket is digitally verified | Thank you for your payment</div>
+      <div style="background:#eef2ff; padding:0.5rem; border-radius:16px; margin-top:6px; word-break:break-all; font-family:monospace; font-size:0.75rem;">${escapedLink}</div>
+      <div style="margin-top: 12px; text-align:center; font-size:0.7rem; color:#4a5b6e;">🔒 Digitally secured | Receipt stored persistently</div>
     `;
     const copyDetailBtn = document.getElementById('copyDetailLinkBtn');
     if (copyDetailBtn) {
       copyDetailBtn.addEventListener('click', () => {
         navigator.clipboard.writeText(fullReceiptLink).then(() => {
           copyDetailBtn.innerText = "✔️ Link copied!";
-          setTimeout(() => copyDetailBtn.innerText = "📎 Copy unique link", 1500);
+          setTimeout(() => copyDetailBtn.innerText = "📎 Copy link", 1500);
         });
       });
     }
   }
   
-  // core: generate receipt from scanned/entered code
-  function generateReceiptFromCode(rawCode) {
+  // core: generate receipt, persist, update UI
+  function generateReceiptFromCode(rawCode, source = "scan") {
     if (!rawCode || rawCode.trim() === "") {
-      alert("⚠️ Empty QR code / input. Please scan or enter a valid ticket code.");
+      alert("⚠️ Empty ticket code. Please scan or enter a valid ticket.");
       return false;
     }
     const ticketData = detectTicketTypeAndPrice(rawCode);
     if (!ticketData) {
-      alert(`❌ Unrecognized ticket code: "${rawCode}".\nPlease scan valid codes: Orange Alumnae, Blue Friends & Family, Yellow Children (6-17)`);
+      alert(`❌ Unrecognized ticket: "${rawCode}".\nValid codes: Orange Alumnae, Blue Friends & Family, Yellow Children (6-17)`);
       return false;
     }
-    // create receipt
+    // Avoid duplicate rapid scanning? Not necessary; but we allow multiple same tickets.
     const newReceipt = createReceiptFromScan(rawCode, ticketData);
     receiptsStore.unshift(newReceipt); // newest first
+    saveReceiptsToStorage(receiptsStore);
     renderReceiptsList();
-    // auto display newly created receipt
     displayDetailedReceipt(newReceipt);
-    // also show small toast like feedback (no external lib)
-    const tempMsg = document.createElement('div');
-    tempMsg.innerText = `✅ Payment received! ${ticketData.amountFormatted} for ${ticketData.type}. Receipt link generated.`;
-    tempMsg.style.position = 'fixed';
-    tempMsg.style.bottom = '20px';
-    tempMsg.style.left = '20px';
-    tempMsg.style.backgroundColor = '#1e4620';
-    tempMsg.style.color = 'white';
-    tempMsg.style.padding = '12px 18px';
-    tempMsg.style.borderRadius = '40px';
-    tempMsg.style.zIndex = '999';
-    tempMsg.style.fontWeight = 'bold';
-    tempMsg.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
-    document.body.appendChild(tempMsg);
-    setTimeout(() => tempMsg.remove(), 2800);
+    // Toast notification
+    const toast = document.createElement('div');
+    toast.innerText = `✅ Payment success! ${ticketData.amountFormatted} for ${ticketData.type}. Receipt saved.`;
+    toast.style.cssText = 'position:fixed; bottom:20px; left:20px; background:#14532d; color:white; padding:12px 20px; border-radius:40px; z-index:1100; font-weight:bold;';
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 2800);
     return true;
   }
   
-  // ---------- QR SCANNER INTEGRATION (html5-qrcode) ----------
+  // ---------- QR SCANNER setup (secure, with permission) ----------
   let html5QrCode;
   let isScanning = false;
-  
   function startScanner() {
-    if (isScanning) {
-      return;
-    }
+    if (isScanning) return;
     const readerElement = document.getElementById('reader');
     if (!readerElement) return;
     if (html5QrCode) {
@@ -460,62 +533,84 @@
     html5QrCode = new Html5Qrcode("reader");
     const config = { fps: 10, qrbox: { width: 250, height: 250 } };
     html5QrCode.start({ facingMode: "environment" }, config, (decodedText) => {
-      // on success scan
-      generateReceiptFromCode(decodedText);
-      // optional: small vibration? not needed, but we avoid duplicate spam scan - but it's intended each scan = separate receipt.
-      // However if user scans same code multiple times quickly we generate multiple receipts, but spec says each QR scan generates receipt - that's correct.
-      // Add a small debounce to avoid massive double scanning from same detection (prevent accidental double)
-      if (html5QrCode) {
-        // we do not stop scanner, continuous but user can stop. Fine
-      }
-    }, (errorMessage) => {
-      // silent errors, ignore typical scan failures
-      // console.debug(errorMessage);
-    }).catch(err => {
+      generateReceiptFromCode(decodedText, "scan");
+    }, (err) => { /* ignore scan failures */ }).catch(err => {
       console.error("Camera error", err);
-      alert("Unable to access camera. Ensure permission granted or use manual input. Try again.");
+      alert("Camera access error. Please allow camera or use manual entry.");
     });
     isScanning = true;
   }
-  
   function stopScanner() {
     if (html5QrCode && isScanning) {
-      html5QrCode.stop().then(() => {
-        isScanning = false;
-      }).catch(err => console.warn("stop error", err));
-    } else {
-      isScanning = false;
+      html5QrCode.stop().then(() => { isScanning = false; }).catch(console.warn);
+    } else isScanning = false;
+  }
+  
+  // Generate Takings Report (modal & data)
+  function generateTakingsReport() {
+    if (receiptsStore.length === 0) {
+      alert("No receipts found. Generate payments first.");
+      return;
+    }
+    let totalRevenue = 0;
+    let counts = { ORANGE: 0, BLUE: 0, YELLOW: 0 };
+    let revenueMap = { ORANGE: 0, BLUE: 0, YELLOW: 0 };
+    for (const r of receiptsStore) {
+      const amt = r.amountNumeric || 0;
+      totalRevenue += amt;
+      if (r.ticketType.includes("Orange")) { counts.ORANGE++; revenueMap.ORANGE += amt; }
+      else if (r.ticketType.includes("Blue")) { counts.BLUE++; revenueMap.BLUE += amt; }
+      else if (r.ticketType.includes("Yellow")) { counts.YELLOW++; revenueMap.YELLOW += amt; }
+    }
+    const modal = document.getElementById('reportModal');
+    const container = document.getElementById('reportStatsContainer');
+    container.innerHTML = `
+      <div style="font-size:1.4rem; font-weight:800; text-align:center;">📊 TOTAL TAKINGS: K${totalRevenue.toFixed(2)}</div>
+      <hr>
+      <div><strong>🍊 Orange Alumnae (K6.00):</strong> ${counts.ORANGE} tickets → K${revenueMap.ORANGE.toFixed(2)}</div>
+      <div><strong>💙 Blue Friends & Family (K6.00):</strong> ${counts.BLUE} tickets → K${revenueMap.BLUE.toFixed(2)}</div>
+      <div><strong>🐤 Yellow Children 6-17 (K3.00):</strong> ${counts.YELLOW} tickets → K${revenueMap.YELLOW.toFixed(2)}</div>
+      <hr>
+      <div><strong>📅 Total transactions:</strong> ${receiptsStore.length}</div>
+      <div><strong>🕒 Report generated:</strong> ${new Date().toLocaleString()}</div>
+    `;
+    modal.style.display = 'flex';
+    // Export CSV
+    const exportBtn = document.getElementById('exportReportBtn');
+    const oldExport = exportBtn.cloneNode(true);
+    exportBtn.parentNode.replaceChild(oldExport, exportBtn);
+    oldExport.addEventListener('click', () => {
+      let csvRows = [["ReceiptID", "TicketType", "Amount(K)", "Date", "TransactionID"]];
+      receiptsStore.forEach(r => {
+        csvRows.push([r.id, r.ticketType, r.amountNumeric, r.dateHuman, r.transactionId]);
+      });
+      csvRows.push(["TOTAL REVENUE", "", totalRevenue.toFixed(2), "", ""]);
+      const csvContent = csvRows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\n");
+      const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      link.href = url;
+      link.setAttribute("download", "ticket_takings_report.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    });
+  }
+  
+  // clear all receipts (with confirmation and persistence)
+  function clearAllReceipts() {
+    if (receiptsStore.length && confirm("⚠️ PERMANENT: Delete ALL saved receipts? This action cannot be undone.")) {
+      receiptsStore = [];
+      saveReceiptsToStorage(receiptsStore);
+      renderReceiptsList();
+      document.getElementById('detailedReceiptView').innerHTML = `<div style="text-align:center; color:#6c757d;">📭 All receipts cleared. Scan new QR codes.</div>`;
+    } else if (!receiptsStore.length) {
+      alert("No receipts to clear.");
     }
   }
   
-  // manual generator
-  document.getElementById('manualGenBtn').addEventListener('click', () => {
-    const inputVal = document.getElementById('manualCodeInput').value.trim();
-    if (inputVal) {
-      generateReceiptFromCode(inputVal);
-      document.getElementById('manualCodeInput').value = '';
-    } else {
-      alert("Please type a ticket code (Orange Alumnae / Blue Friends & Family / Yellow Children 6-17)");
-    }
-  });
-  
-  // stop button
-  document.getElementById('stopScannerBtn').addEventListener('click', () => {
-    stopScanner();
-  });
-  
-  // clear all receipts
-  document.getElementById('clearAllReceipts').addEventListener('click', () => {
-    if (receiptsStore.length && confirm("⚠️ Delete all generated receipts? This action is permanent.")) {
-      receiptsStore = [];
-      renderReceiptsList();
-      document.getElementById('detailedReceiptView').innerHTML = `<div style="text-align:center; color:#6c757d;">📭 Receipts cleared. Scan any QR to generate new receipt & unique link.</div>`;
-    } else if (receiptsStore.length === 0) {
-      alert("No receipts to clear.");
-    }
-  });
-  
-  // Hash-based routing: when user lands on #/receipt/ID or clicks links, show receipt directly
+  // handle hash routing (secure view)
   function handleHashRouting() {
     const hash = window.location.hash;
     if (hash && hash.startsWith('#/receipt/')) {
@@ -523,99 +618,79 @@
       const found = receiptsStore.find(r => r.id === receiptId);
       if (found) {
         displayDetailedReceipt(found);
-        // also scroll to receipt panel
-        document.querySelector('.receipt-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        document.querySelector('.receipt-panel')?.scrollIntoView({ behavior: 'smooth' });
       } else {
-        if(receiptsStore.length) {
-          document.getElementById('detailedReceiptView').innerHTML = `<div style="padding:1rem; background:#fff0f0; border-radius:1rem;">⚠️ Receipt not found or expired. Generate new via scan.</div>`;
-        }
+        document.getElementById('detailedReceiptView').innerHTML = `<div style="padding:1rem; background:#fff0f0; border-radius:1rem;">⚠️ Receipt not found or was deleted.</div>`;
       }
     }
   }
   
-  window.addEventListener('hashchange', handleHashRouting);
-  
-  // generate demo QR codes for three categories
-  function generateDemoQRCodes() {
-    const container = document.getElementById('demoQrContainer');
-    if (!container) return;
-    container.innerHTML = '';
-    const demoItems = [
-      { text: "Orange Alumnae", price: "K6.00", color: "#f97316" },
-      { text: "Blue Friends & Family", price: "K6.00", color: "#3b82f6" },
-      { text: "Yellow Children (6-17)", price: "K3.00", color: "#eab308" }
-    ];
-    demoItems.forEach((item, idx) => {
-      const card = document.createElement('div');
-      card.className = 'qr-card';
-      const qrDiv = document.createElement('div');
-      qrDiv.id = `demoqr_${idx}`;
-      card.appendChild(qrDiv);
-      const label = document.createElement('p');
-      label.innerText = item.text;
-      const priceSpan = document.createElement('span');
-      priceSpan.className = 'badge-price';
-      priceSpan.innerText = item.price;
-      card.appendChild(label);
-      card.appendChild(priceSpan);
-      container.appendChild(card);
-      // generate QR using QRCode library (global QRCode)
-      setTimeout(() => {
-        if (typeof QRCode !== 'undefined') {
-          new QRCode(qrDiv, {
-            text: item.text,
-            width: 100,
-            height: 100,
-            colorDark: "#1f2937",
-            colorLight: "#ffffff",
-            correctLevel: QRCode.CorrectLevel.M
-          });
-        } else {
-          qrDiv.innerText = "QR lib error";
-        }
-      }, 10);
+  // ---------- INIT UI & EVENT HANDLERS ----------
+  function init() {
+    renderReceiptsList();
+    handleHashRouting();
+    // Manual button
+    document.getElementById('manualGenBtn').addEventListener('click', () => {
+      const val = document.getElementById('manualCodeInput').value.trim();
+      if (val) generateReceiptFromCode(val);
+      else alert("Enter a valid ticket code");
+      document.getElementById('manualCodeInput').value = '';
     });
-  }
-  
-  // on page load: init scanner via user gesture? better ask for camera on start with button, but provide start on demand
-  const startScanBtn = document.createElement('button');
-  startScanBtn.innerText = "📸 Start Camera Scanner";
-  startScanBtn.style.background = "#2c553c";
-  startScanBtn.style.marginBottom = "12px";
-  startScanBtn.style.width = "100%";
-  const scannerBox = document.querySelector('.scanner-box');
-  scannerBox.insertBefore(startScanBtn, scannerBox.firstChild);
-  startScanBtn.addEventListener('click', (e) => {
-    startScanner();
-    startScanBtn.style.display = 'none';
-    const stopBtn = document.getElementById('stopScannerBtn');
-    if(stopBtn) stopBtn.style.display = 'inline-block';
-  });
-  document.getElementById('stopScannerBtn').style.display = 'none';
-  document.getElementById('stopScannerBtn').addEventListener('click', () => {
-    stopScanner();
-    startScanBtn.style.display = 'block';
+    document.getElementById('stopScannerBtn').addEventListener('click', stopScanner);
+    document.getElementById('clearAllReceipts').addEventListener('click', clearAllReceipts);
+    document.getElementById('reportTakingsBtn').addEventListener('click', generateTakingsReport);
+    const modal = document.getElementById('reportModal');
+    document.getElementById('closeModalBtn').addEventListener('click', () => modal.style.display = 'none');
+    window.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
+    window.addEventListener('hashchange', handleHashRouting);
+    // Start scanner button inject
+    const scannerBox = document.querySelector('.scanner-box');
+    const startScanBtn = document.createElement('button');
+    startScanBtn.innerText = "📸 Start Camera Scanner";
+    startScanBtn.style.background = "#2c553c";
+    startScanBtn.style.marginBottom = "12px";
+    startScanBtn.style.width = "100%";
+    scannerBox.insertBefore(startScanBtn, scannerBox.firstChild);
+    startScanBtn.addEventListener('click', () => {
+      startScanner();
+      startScanBtn.style.display = 'none';
+      document.getElementById('stopScannerBtn').style.display = 'inline-block';
+    });
     document.getElementById('stopScannerBtn').style.display = 'none';
-  });
-  
-  // prepopulate with example? optional keep empty for clean demo.
-  generateDemoQRCodes();
-  // initial receipt empty
-  renderReceiptsList();
-  // add example default receipt message
-  document.getElementById('detailedReceiptView').innerHTML = `<div style="text-align:center; color:#6c757d;">✨ Scan any QR code or use manual. Each receipt gets its own unique link.</div>`;
-  
-  // Load any existing store from localStorage? keep it optional but fresh; doing memory only.
-  
-  // if any external link click copy feature support
-  handleHashRouting();
-  
-  // also display already receipt if link share: watch after store loads, but after each generation routing works.
-  window.addEventListener('load', () => {
-    if (receiptsStore.length === 0) {
-      // optional demo receipt not needed but user friendly maybe? no
+    // Generate demo QR Codes
+    const container = document.getElementById('demoQrContainer');
+    if (container) {
+      const items = [
+        { text: "Orange Alumnae", price: "K6.00", color: "#f97316" },
+        { text: "Blue Friends & Family", price: "K6.00", color: "#3b82f6" },
+        { text: "Yellow Children (6-17)", price: "K3.00", color: "#eab308" }
+      ];
+      container.innerHTML = '';
+      items.forEach((item, idx) => {
+        const card = document.createElement('div');
+        card.className = 'qr-card';
+        const qrDiv = document.createElement('div');
+        qrDiv.id = `demoqr_${idx}`;
+        card.appendChild(qrDiv);
+        const label = document.createElement('p');
+        label.innerText = item.text;
+        const priceSpan = document.createElement('span');
+        priceSpan.className = 'badge-price';
+        priceSpan.innerText = item.price;
+        card.appendChild(label);
+        card.appendChild(priceSpan);
+        container.appendChild(card);
+        setTimeout(() => {
+          if (typeof QRCode !== 'undefined') new QRCode(qrDiv, { text: item.text, width: 100, height: 100 });
+          else qrDiv.innerText = "QR error";
+        }, 20);
+      });
     }
-  });
+    if (receiptsStore.length === 0) {
+      // Optional: show welcome note
+    }
+  }
+  init();
 </script>
 </body>
 </html>
